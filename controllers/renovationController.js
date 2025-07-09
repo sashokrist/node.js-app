@@ -19,10 +19,16 @@ const upload = multer({ storage });
 // Middleware for single image upload
 exports.uploadRenovationImage = upload.single('image');
 
-// Show list of renovations
+// List renovations and renovating_services
 exports.index = async (req, res) => {
-  const [renovations] = await pool.execute('SELECT * FROM renovations ORDER BY id DESC');
-  res.render('renovations/index', { renovations });
+  try {
+    const [renovations] = await pool.execute('SELECT * FROM renovations ORDER BY id DESC');
+    const [renovatingServices] = await pool.execute('SELECT * FROM renovating_services ORDER BY id DESC');
+    res.render('renovations/index', { renovations, renovatingServices });
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    res.status(500).send('Server Error');
+  }
 };
 
 // Show create form
@@ -30,26 +36,77 @@ exports.showCreateForm = (req, res) => {
   res.render('renovations/create');
 };
 
-// Create a renovation service
+// Create renovation and renovating_service
 exports.create = async (req, res) => {
-  const { service_name, description } = req.body;
+  const { service_name, description, service_type } = req.body;
+  const image_name = req.file?.originalname || null;
+  const image_url = req.file ? '/uploads/renovations/' + req.file.filename : null;
 
-  // Safe image path (null if no file uploaded)
-  const imagePath = req.file && req.file.filename
-    ? '/uploads/renovations/' + req.file.filename
-    : null;
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
 
-  // Optional debug log (remove in production)
-  console.log({ service_name, description, imagePath });
+    // Insert into renovations
+    await conn.execute(
+      'INSERT INTO renovations (service_name, description, image_url) VALUES (?, ?, ?)',
+      [service_name, description, image_url]
+    );
+
+    // Insert into renovating_services
+    await conn.execute(
+      'INSERT INTO renovating_services (title, image_name, description, image_url, service_type) VALUES (?, ?, ?, ?, ?)',
+      [service_name, image_name, description, image_url, service_type]
+    );
+
+    await conn.commit();
+    res.redirect('/admin/renovations');
+  } catch (err) {
+    await conn.rollback();
+    console.error('Transaction failed:', err);
+    res.status(500).send('Insert Failed');
+  } finally {
+    conn.release();
+  }
+};
+
+// Show edit form
+exports.showEditForm = async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM renovations WHERE id = ?', [req.params.id]);
+    const renovation = rows[0];
+    if (!renovation) return res.status(404).send('Renovation not found');
+    res.render('renovations/edit', { renovation });
+  } catch (err) {
+    console.error('Fetch for edit failed:', err);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Update renovation
+exports.update = async (req, res) => {
+  const { service_name, description, existing_image } = req.body;
+  const id = req.params.id;
+  const image_url = req.file ? '/uploads/renovations/' + req.file.filename : existing_image;
 
   try {
     await pool.execute(
-      'INSERT INTO renovations (service_name, description, image_url) VALUES (?, ?, ?)',
-      [service_name, description, imagePath]
+      'UPDATE renovations SET service_name = ?, description = ?, image_url = ? WHERE id = ?',
+      [service_name, description, image_url, id]
     );
     res.redirect('/admin/renovations');
   } catch (err) {
-    console.error('Database insert error:', err);
-    res.status(500).send('Server Error');
+    console.error('Update failed:', err);
+    res.status(500).send('Update Failed');
+  }
+};
+
+// Delete renovation
+exports.delete = async (req, res) => {
+  try {
+    await pool.execute('DELETE FROM renovations WHERE id = ?', [req.params.id]);
+    res.redirect('/admin/renovations');
+  } catch (err) {
+    console.error('Delete failed:', err);
+    res.status(500).send('Delete Failed');
   }
 };

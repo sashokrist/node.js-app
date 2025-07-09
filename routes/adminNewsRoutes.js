@@ -13,4 +13,8 @@ router.get('/create', newsController.showCreateForm);
 // Handle form submission
 router.post('/create', newsController.create);
 
+router.get('/edit/:id', newsController.showEditForm);
+router.post('/edit/:id', newsController.update);
+router.post('/delete/:id', newsController.delete);
+
 module.exports = router;

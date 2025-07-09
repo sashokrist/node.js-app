@@ -19,13 +19,79 @@
   </div>
 </nav>
 <div class="container">
-    <h2>Renovations</h2>
-<a href="/admin/renovations/create" class="btn btn-primary">Create Renovation Service</a>
-<ul>
-  <% renovations.forEach(item => { %>
-    <li><strong><%= item.service_name %></strong></li>
-  <% }) %>
-</ul>
-  </div>
+  <h2>Renovations</h2>
+  <a href="/admin/renovations/create" class="btn btn-primary mb-3">Create Renovation Service</a>
+
+  <h4>Renovations</h4>
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Service Name</th>
+        <th>Description</th>
+        <th>Image</th>
+        <th>Created At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% renovations.forEach(item => { %>
+        <tr>
+          <td><%= item.id %></td>
+          <td><%= item.service_name %></td>
+          <td><%= item.description %></td>
+          <td>
+            <% if (item.image_url) { %>
+              <img src="<%= item.image_url %>" width="100">
+            <% } else { %>
+              No Image
+            <% } %>
+          </td>
+          <td><%= item.created_at.toLocaleString() %></td>
+          <td>
+            <a href="/admin/renovations/edit/<%= item.id %>" class="btn btn-sm btn-warning">Edit</a>
+            <form method="POST" action="/admin/renovations/delete/<%= item.id %>" class="d-inline" onsubmit="return confirm('Are you sure?')">
+              <button class="btn btn-sm btn-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <h4 class="mt-5">Renovating Services</h4>
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Description</th>
+        <th>Service Type</th>
+        <th>Image Name</th>
+        <th>Image</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% renovatingServices.forEach(item => { %>
+        <tr>
+          <td><%= item.id %></td>
+          <td><%= item.title %></td>
+          <td><%= item.description %></td>
+          <td><%= item.service_type %></td>
+          <td><%= item.image_name %></td>
+          <td>
+            <% if (item.image_url) { %>
+              <img src="<%= item.image_url %>" width="100">
+            <% } else { %>
+              No Image
+            <% } %>
+          </td>
+          <td><%= item.created_at.toLocaleString() %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
 </body>
 </html>

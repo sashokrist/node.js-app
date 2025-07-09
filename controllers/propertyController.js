@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Set up multer for handling multiple images
+// Multer storage for images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = 'public/uploads/properties';
@@ -17,32 +17,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 exports.uploadImages = upload.array('images', 10); // up to 10 images
 
+// List all properties
 exports.index = async (req, res) => {
   const [properties] = await pool.execute('SELECT * FROM properties ORDER BY id DESC');
   res.render('properties/index', { properties });
 };
 
-exports.showCreateForm = (req, res) => {
-  res.render('properties/create');
-};
-
-exports.create = async (req, res) => {
-  const {
-    title, description, price, location,
-    size, year_built, bedrooms, bathrooms
-  } = req.body;
-
-  const imagePaths = req.files.map(file => '/uploads/properties/' + file.filename);
-  const image_url = imagePaths.join(','); // store as comma-separated string
-
-  await pool.execute(
-    'INSERT INTO properties (title, description, price, location, size, year_built, image_url, bedrooms, bathrooms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [title, description, price, location, size, year_built, image_url, bedrooms, bathrooms]
-  );
-
-  res.redirect('/admin/properties');
-};
-
+// Show property details
 exports.showProperty = async (req, res) => {
   const [rows] = await pool.execute('SELECT * FROM properties WHERE id = ?', [req.params.id]);
   const property = rows[0];
@@ -50,6 +31,87 @@ exports.showProperty = async (req, res) => {
   if (!property) return res.status(404).send('Property not found');
 
   property.images = property.image_url ? property.image_url.split(',') : [];
+  const [features] = await pool.execute('SELECT feature FROM property_features WHERE property_id = ?', [property.id]);
+  property.features = features.map(f => f.feature);
+
   res.render('properties/show', { property });
 };
 
+// Show create form
+exports.showCreateForm = (req, res) => {
+  res.render('properties/create');
+};
+
+// Handle create form submission
+exports.create = async (req, res) => {
+  const {
+    title, description, price, location,
+    size, year_built, bedrooms, bathrooms, features
+  } = req.body;
+
+  const imagePaths = req.files.map(file => '/uploads/properties/' + file.filename);
+  const image_url = imagePaths.join(',');
+
+  const [result] = await pool.execute(
+    `INSERT INTO properties (title, description, price, location, size, year_built, image_url, bedrooms, bathrooms)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [title, description, price, location, size, year_built, image_url, bedrooms, bathrooms]
+  );
+
+  const propertyId = result.insertId;
+
+  if (features) {
+    const featureList = features.split(',').map(f => f.trim()).filter(Boolean);
+    for (const feature of featureList) {
+      await pool.execute('INSERT INTO property_features (property_id, feature) VALUES (?, ?)', [propertyId, feature]);
+    }
+  }
+
+  res.redirect('/admin/properties');
+};
+
+// Show edit form
+exports.showEditForm = async (req, res) => {
+  const [[property]] = await pool.execute('SELECT * FROM properties WHERE id = ?', [req.params.id]);
+  const [featuresRows] = await pool.execute('SELECT feature FROM property_features WHERE property_id = ?', [req.params.id]);
+  property.features = featuresRows.map(f => f.feature);
+  res.render('properties/edit', { property });
+};
+
+// Update existing property
+exports.update = async (req, res) => {
+  const {
+    title, description, price, location,
+    size, year_built, bedrooms, bathrooms, features
+  } = req.body;
+
+  const id = req.params.id;
+
+  await pool.execute(
+    `UPDATE properties SET title=?, description=?, price=?, location=?, size=?, year_built=?, bedrooms=?, bathrooms=?
+     WHERE id=?`,
+    [title, description, price, location, size, year_built, bedrooms, bathrooms, id]
+  );
+
+  // Delete and reinsert features
+  await pool.execute('DELETE FROM property_features WHERE property_id = ?', [id]);
+
+  if (features) {
+    const featureList = features.split(',').map(f => f.trim()).filter(Boolean);
+    for (const feature of featureList) {
+      await pool.execute('INSERT INTO property_features (property_id, feature) VALUES (?, ?)', [id, feature]);
+    }
+  }
+
+  res.redirect('/admin/properties');
+};
+
+// Delete property and features
+exports.delete = async (req, res) => {
+  const id = req.params.id;
+
+  // Features will auto-delete if `ON DELETE CASCADE` is set in your foreign key
+  await pool.execute('DELETE FROM properties WHERE id = ?', [id]);
+
+  res.redirect('/admin/properties');
+};

@@ -10,5 +10,5 @@ router.get('/create', newsController.showCreateForm);
 
 // Handle create form submission
 router.post('/create', newsController.uploadNewsImage, newsController.create);
-
+router.get('/:id', newsController.show); // 👈 this must come after the `/create` route
 module.exports = router;
