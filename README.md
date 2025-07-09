@@ -33,6 +33,19 @@ npm install
 
 npm start
 
+Visit your app at: http://localhost:3000
+
+Ensure your models/db.js is configured like this:
+
+const mysql = require('mysql2/promise');
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '', // no password if empty
+  database: 'real_estate'
+});
+module.exports = pool;
+
 Create database
 
 -- Create the database if it doesn't exist
