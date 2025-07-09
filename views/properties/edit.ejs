@@ -7,7 +7,7 @@
 <body>
 <div class="container mt-4">
   <h2>Edit Property</h2>
-  <form method="POST" action="/admin/properties/edit/<%= property.id %>">
+  <form method="POST" action="/admin/properties/edit/<%= property.id %>" enctype="multipart/form-data">
     <div class="mb-3"><label>Title</label><input name="title" class="form-control" value="<%= property.title %>" required></div>
     <div class="mb-3"><label>Description</label><textarea name="description" class="form-control" rows="4"><%= property.description %></textarea></div>
     <div class="mb-3"><label>Price</label><input name="price" type="number" step="0.01" class="form-control" value="<%= property.price %>" required></div>
@@ -19,6 +19,26 @@
     <div class="mb-3"><label>Features (comma-separated)</label>
       <input name="features" class="form-control" value="<%= property.features.join(', ') %>">
     </div>
+
+    <!-- ✅ New Multiple Image Upload -->
+    <div class="mb-3">
+      <label>Upload New Images</label>
+      <input type="file" name="images" class="form-control" multiple accept="image/*">
+    </div>
+
+    <!-- ✅ Show Existing Images -->
+    <% if (property.image_url) { 
+         const imageArray = property.image_url.split(','); %>
+      <div class="mb-3">
+        <label>Current Images</label>
+        <div class="d-flex flex-wrap gap-2">
+          <% imageArray.forEach(img => { %>
+            <img src="<%= img %>" style="height: 80px; object-fit: cover; border: 1px solid #ccc;" />
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+
     <button type="submit" class="btn btn-primary">Update</button>
   </form>
 </div>

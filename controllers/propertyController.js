@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Multer storage for images
+// Multer storage config for image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = 'public/uploads/properties';
@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
-exports.uploadImages = upload.array('images', 10); // up to 10 images
+exports.uploadImages = upload.array('images', 10); // max 10 files
 
 // List all properties
 exports.index = async (req, res) => {
@@ -23,7 +23,7 @@ exports.index = async (req, res) => {
   res.render('properties/index', { properties });
 };
 
-// Show property details
+// Show single property details
 exports.showProperty = async (req, res) => {
   const [rows] = await pool.execute('SELECT * FROM properties WHERE id = ?', [req.params.id]);
   const property = rows[0];
@@ -37,12 +37,12 @@ exports.showProperty = async (req, res) => {
   res.render('properties/show', { property });
 };
 
-// Show create form
+// Show form to create a property
 exports.showCreateForm = (req, res) => {
   res.render('properties/create');
 };
 
-// Handle create form submission
+// Create a new property
 exports.create = async (req, res) => {
   const {
     title, description, price, location,
@@ -87,30 +87,43 @@ exports.update = async (req, res) => {
 
   const id = req.params.id;
 
-  await pool.execute(
-    `UPDATE properties SET title=?, description=?, price=?, location=?, size=?, year_built=?, bedrooms=?, bathrooms=?
-     WHERE id=?`,
-    [title, description, price, location, size, year_built, bedrooms, bathrooms, id]
-  );
+  try {
+    // Update base fields
+    await pool.execute(
+      `UPDATE properties SET title=?, description=?, price=?, location=?, size=?, year_built=?, bedrooms=?, bathrooms=?
+       WHERE id=?`,
+      [title, description, price, location, size, year_built, bedrooms, bathrooms, id]
+    );
 
-  // Delete and reinsert features
-  await pool.execute('DELETE FROM property_features WHERE property_id = ?', [id]);
-
-  if (features) {
-    const featureList = features.split(',').map(f => f.trim()).filter(Boolean);
-    for (const feature of featureList) {
-      await pool.execute('INSERT INTO property_features (property_id, feature) VALUES (?, ?)', [id, feature]);
+    // Replace images if new ones are uploaded
+    if (req.files && req.files.length > 0) {
+      const newImagePaths = req.files.map(file => '/uploads/properties/' + file.filename);
+      const image_url = newImagePaths.join(',');
+      await pool.execute('UPDATE properties SET image_url = ? WHERE id = ?', [image_url, id]);
     }
-  }
 
-  res.redirect('/admin/properties');
+    // Replace features
+    await pool.execute('DELETE FROM property_features WHERE property_id = ?', [id]);
+
+    if (features) {
+      const featureList = features.split(',').map(f => f.trim()).filter(Boolean);
+      for (const feature of featureList) {
+        await pool.execute('INSERT INTO property_features (property_id, feature) VALUES (?, ?)', [id, feature]);
+      }
+    }
+
+    res.redirect('/admin/properties');
+  } catch (err) {
+    console.error('Property update failed:', err);
+    res.status(500).send('Update failed');
+  }
 };
 
-// Delete property and features
+// Delete property
 exports.delete = async (req, res) => {
   const id = req.params.id;
 
-  // Features will auto-delete if `ON DELETE CASCADE` is set in your foreign key
+  // Features will be deleted if ON DELETE CASCADE is set
   await pool.execute('DELETE FROM properties WHERE id = ?', [id]);
 
   res.redirect('/admin/properties');

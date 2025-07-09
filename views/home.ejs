@@ -22,44 +22,45 @@
 </nav>
 
 <div class="container">
+  <!-- News Section -->
   <h2>Latest News</h2>
-
   <% news.forEach(item => { %>
-  <div class="card mb-4">
-    <% if (item.image) { %>
-      <img src="<%= item.image %>" class="img-fluid mx-auto d-block" style="max-height: 120px; object-fit: contain;">
-    <% } %>
-    <div class="card-body">
-      <h5 class="card-title"><%= item.title %></h5>
-      <p class="card-text">
-        <%= item.content.length > 150 ? item.content.substring(0, 150) + '...' : item.content %>
-      </p>
-      <a href="/news/<%= item.id %>" class="btn btn-sm btn-outline-primary">Read more</a>
+    <div class="card mb-4">
+      <% if (item.image) { %>
+        <img src="<%= item.image %>" class="img-fluid mx-auto d-block" style="max-height: 120px; object-fit: contain;">
+      <% } %>
+      <div class="card-body">
+        <h5 class="card-title"><%= item.title %></h5>
+        <p class="card-text">
+          <%= item.content.length > 150 ? item.content.substring(0, 150) + '...' : item.content %>
+        </p>
+        <a href="/news/<%= item.id %>" class="btn btn-sm btn-outline-primary">Read more</a>
+      </div>
     </div>
-  </div>
-<% }) %>
+  <% }) %>
 
-  <!-- Pagination -->
+  <!-- News Pagination -->
   <nav aria-label="News pagination">
     <ul class="pagination justify-content-center">
-      <% if (page > 1) { %>
+      <% if (newsPage > 1) { %>
         <li class="page-item">
-          <a class="page-link" href="/?page=<%= page - 1 %>">&laquo; Prev</a>
+          <a class="page-link" href="/?newsPage=<%= newsPage - 1 %>&propertyPage=<%= propertyPage %>">&laquo; Prev</a>
         </li>
       <% } %>
-      <% for (let i = 1; i <= totalPages; i++) { %>
-        <li class="page-item <%= i === page ? 'active' : '' %>">
-          <a class="page-link" href="/?page=<%= i %>"><%= i %></a>
+      <% for (let i = 1; i <= newsTotalPages; i++) { %>
+        <li class="page-item <%= i === newsPage ? 'active' : '' %>">
+          <a class="page-link" href="/?newsPage=<%= i %>&propertyPage=<%= propertyPage %>"><%= i %></a>
         </li>
       <% } %>
-      <% if (page < totalPages) { %>
+      <% if (newsPage < newsTotalPages) { %>
         <li class="page-item">
-          <a class="page-link" href="/?page=<%= page + 1 %>">Next &raquo;</a>
+          <a class="page-link" href="/?newsPage=<%= newsPage + 1 %>&propertyPage=<%= propertyPage %>">Next &raquo;</a>
         </li>
       <% } %>
     </ul>
   </nav>
 
+  <!-- Property Section -->
   <h2 class="mt-5">Latest Properties</h2>
   <div class="row">
     <% properties.forEach(item => { %>
@@ -83,6 +84,28 @@
     <% }) %>
   </div>
 
+  <!-- Property Pagination -->
+  <nav aria-label="Property pagination">
+    <ul class="pagination justify-content-center">
+      <% if (propertyPage > 1) { %>
+        <li class="page-item">
+          <a class="page-link" href="/?newsPage=<%= newsPage %>&propertyPage=<%= propertyPage - 1 %>">&laquo; Prev</a>
+        </li>
+      <% } %>
+      <% for (let i = 1; i <= propertyTotalPages; i++) { %>
+        <li class="page-item <%= i === propertyPage ? 'active' : '' %>">
+          <a class="page-link" href="/?newsPage=<%= newsPage %>&propertyPage=<%= i %>"><%= i %></a>
+        </li>
+      <% } %>
+      <% if (propertyPage < propertyTotalPages) { %>
+        <li class="page-item">
+          <a class="page-link" href="/?newsPage=<%= newsPage %>&propertyPage=<%= propertyPage + 1 %>">Next &raquo;</a>
+        </li>
+      <% } %>
+    </ul>
+  </nav>
+
+  <!-- Renovations Section -->
   <h2 class="mt-5">Latest Renovations</h2>
   <div class="row">
     <% renovations.forEach(item => { %>
