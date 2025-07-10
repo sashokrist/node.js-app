@@ -6,7 +6,7 @@ router.get('/', async (req, res) => {
   const newsPage = parseInt(req.query.newsPage) || 1;
   const propertyPage = parseInt(req.query.propertyPage) || 1;
 
-  const newsLimit = 3;
+  const newsLimit = 6;
   const propLimit = 6;
 
   const newsOffset = (newsPage - 1) * newsLimit;
