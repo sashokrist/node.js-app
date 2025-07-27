@@ -28,5 +28,8 @@ app.use('/property', require('./routes/propertyRoutes'));
 app.use('/admin/renovations', require('./routes/renovationRoutes'));
 app.use('/', require('./routes/homeRoutes')); // loads the new home page with news, properties, renovations
 // Server
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
